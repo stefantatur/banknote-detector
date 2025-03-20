@@ -2,19 +2,33 @@ from fastapi import FastAPI, File, UploadFile
 import cv2
 import numpy as np
 import tempfile
-from detection import detect_money
+from detection import detect_banknote
+import os
+import shutil
+from fastapi.responses import JSONResponse
+from main import run
+
 app = FastAPI()
 
-@app.post("/detect") # когда пользователь отправляет POST-запрос вызови detect()
-async def detect(file: UploadFile= File(...)):
-    contents = await file.load()
-    np_arr = np.frombuffer(contents, np.uint8)
-    img = cv2.imdecode(np.arr, cv2.IMREAD_COLOR)
+# Загружаем изображение и отправляем на распознавание
+@app.post("/detect/svm")
+async def detect(file: UploadFile = File(...), model: str = 'SVM'):
+    # Сохраняем временный файл
+    file_path = f"temp_{file.filename}"
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
 
-    total_sum = detect_money(img)
+    result = run(model, file_path)
 
-    return {"total_sum": total_sum}
+    # Удаляем временный файл
+    os.remove(file_path)
 
-@app.get("/")
+    return JSONResponse(content={"result": result}, media_type="application/json")
+
+@app.get("/kek")
 def kek():
-    return("kek")
+    return {"kek": "popa"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)
