@@ -3,4 +3,4 @@
 
 # Tech stack
 - **Sklearn**
-- - ** **
+- **FastAPI**
